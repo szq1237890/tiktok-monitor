@@ -57,41 +57,57 @@ def check_new_videos(username: str):
     print(f"  Found {len(videos)} videos, {new_count} new")
 
 
+def is_active_time():
+    """检查当前时间是否在活跃时间段（20:00-23:00）"""
+    now = datetime.now()
+    return 20 <= now.hour < 23
+
+
+def wait_for_active_time():
+    """等待到下一个活跃时间段"""
+    now = datetime.now()
+    if now.hour < 20:
+        # 等待到今天 20:00
+        target = now.replace(hour=20, minute=0, second=0, microsecond=0)
+    else:
+        # 等待到明天 20:00
+        target = (now + timedelta(days=1)).replace(hour=20, minute=0, second=0, microsecond=0)
+
+    wait_seconds = (target - now).total_seconds()
+    print(f"[{now.strftime('%Y-%m-%d %H:%M:%S')}] 非活跃时间段，等待到 {target.strftime('%Y-%m-%d %H:%M')}...")
+    time.sleep(wait_seconds)
+
+
 def main():
     init_db()
 
-    # First run: record existing videos and send latest video info
-    print(f"First run: recording existing videos for @{TIKTOK_USERNAME}...")
+    # 首次运行：记录现有视频
+    print(f"首次运行：记录 @{TIKTOK_USERNAME} 的现有视频...")
     videos = get_user_videos(TIKTOK_USERNAME, count=10)
     if not videos:
-        print(f"[Warning] No videos found for @{TIKTOK_USERNAME}. Please check the username.")
+        print(f"[警告] 未找到 @{TIKTOK_USERNAME} 的视频，请检查用户名。")
     for v in videos:
         if is_new_video(v["video_id"]):
             add_video(v["video_id"], TIKTOK_USERNAME, v["title"])
-    print(f"Recorded {len(videos)} existing videos.")
+    print(f"已记录 {len(videos)} 个视频。")
 
-    # Send latest video notification on startup
-    if videos:
-        latest = videos[0]
-        publish_time = datetime.fromtimestamp(latest["create_time"], tz=timezone(timedelta(hours=8))).strftime("%Y-%m-%d %H:%M")
-        send_wechat(
-            title=f"@{TIKTOK_USERNAME} 最新视频",
-            content=(
-                f"> **{latest['title'][:80]}**\n"
-                f"> 发布时间: {publish_time}\n"
-                f"> 播放: {latest['play_count']} | 点赞: {latest['digg_count']} | 评论: {latest['comment_count']}\n"
-                f"> [观看视频]({latest['url']})"
-            ),
-        )
-    print("Monitoring started.\n")
-
-    schedule.every(CHECK_INTERVAL_MINUTES).minutes.do(check_new_videos, TIKTOK_USERNAME)
+    print(f"监控已启动，活跃时间：每天 20:00-23:00，每 {CHECK_INTERVAL_MINUTES} 分钟检查一次。\n")
 
     while running:
-        schedule.run_pending()
-        time.sleep(1)
+        if is_active_time():
+            # 在活跃时间段内，执行检查
+            check_new_videos(TIKTOK_USERNAME)
 
-    print("Exited.")
+            # 等待下一次检查
+            for _ in range(CHECK_INTERVAL_MINUTES * 60):
+                if not running:
+                    break
+                time.sleep(1)
+        else:
+            # 不在活跃时间段，等待
+            wait_for_active_time()
+
+    print("已退出。")
 
 
 if __name__ == "__main__":
