@@ -1,0 +1,7 @@
+services:
+  tiktok-monitor:
+    build: .
+    container_name: tiktok-monitor
+    restart: unless-stopped
+    env_file:
+      - .env

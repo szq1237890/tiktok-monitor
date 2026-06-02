@@ -1,0 +1,7 @@
+.env
+tiktok_monitor.db
+tiktok_monitor.db-shm
+tiktok_monitor.db-wal
+__pycache__/
+*.pyc
+.claude/
