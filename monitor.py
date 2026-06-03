@@ -58,20 +58,20 @@ def check_new_videos(username: str):
 
 
 def is_active_time():
-    """检查当前时间是否在活跃时间段（20:00-23:00）"""
+    """检查当前时间是否在活跃时间段（21:00-23:00）"""
     now = datetime.now()
-    return 20 <= now.hour < 23
+    return 21 <= now.hour < 23
 
 
 def wait_for_active_time():
     """等待到下一个活跃时间段"""
     now = datetime.now()
-    if now.hour < 20:
-        # 等待到今天 20:00
-        target = now.replace(hour=20, minute=0, second=0, microsecond=0)
+    if now.hour < 21:
+        # 等待到今天 21:00
+        target = now.replace(hour=21, minute=0, second=0, microsecond=0)
     else:
-        # 等待到明天 20:00
-        target = (now + timedelta(days=1)).replace(hour=20, minute=0, second=0, microsecond=0)
+        # 等待到明天 21:00
+        target = (now + timedelta(days=1)).replace(hour=21, minute=0, second=0, microsecond=0)
 
     wait_seconds = (target - now).total_seconds()
     print(f"[{now.strftime('%Y-%m-%d %H:%M:%S')}] 非活跃时间段，等待到 {target.strftime('%Y-%m-%d %H:%M')}...")
@@ -91,7 +91,7 @@ def main():
             add_video(v["video_id"], TIKTOK_USERNAME, v["title"])
     print(f"已记录 {len(videos)} 个视频。")
 
-    print(f"监控已启动，活跃时间：每天 20:00-23:00，每 {CHECK_INTERVAL_MINUTES} 分钟检查一次。\n")
+    print(f"监控已启动，活跃时间：每天 21:00-23:00，每 {CHECK_INTERVAL_MINUTES} 分钟检查一次。\n")
 
     while running:
         if is_active_time():
